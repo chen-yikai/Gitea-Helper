@@ -12,7 +12,8 @@ import SwiftData
 struct Gitea_HelperApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            GiteaHost.self,
+            GeneratedAccount.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

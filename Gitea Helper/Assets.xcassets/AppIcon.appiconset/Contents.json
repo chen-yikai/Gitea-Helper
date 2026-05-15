@@ -31,11 +31,13 @@
       "size" : "128x128"
     },
     {
+      "filename" : "GiteaHelper_Icon-iOS-Default-256x256@1x.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "256x256"
     },
     {
+      "filename" : "GiteaHelper_Icon-iOS-Default-512x512@1x.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "256x256"
