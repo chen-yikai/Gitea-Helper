@@ -18,15 +18,28 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \GiteaHost.createdAt) private var hosts: [GiteaHost]
     @State private var selectedHost: GiteaHost?
+    @State private var hostToDelete: GiteaHost?
+    @State private var confirmHostDelete = false
 
     var body: some View {
         NavigationSplitView {
             List(selection: $selectedHost) {
                 ForEach(hosts) { host in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(host.name).font(.headline)
-                        Text(host.baseURL).font(.caption).foregroundStyle(.secondary)
-                    }.tag(host)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(host.name).font(.headline)
+                            Text(host.baseURL).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button(role: .destructive) {
+                            hostToDelete = host
+                            confirmHostDelete = true
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                    .tag(host)
                 }.onDelete(perform: deleteHosts)
             }
             .navigationTitle("Hosts")
@@ -36,16 +49,35 @@ struct ContentView: View {
             else { ContentUnavailableView("Add a Gitea host", systemImage: "server.rack") }
         }
         .onAppear { selectedHost = selectedHost ?? hosts.first }
+        .confirmationDialog("Delete this host?", isPresented: $confirmHostDelete) {
+            Button("Delete host", role: .destructive) { deleteSelectedHost() }
+        } message: {
+            Text(hostToDelete?.name ?? "")
+        }
     }
 
     private func addHost() {
-        let host = GiteaHost(name: "New Host", baseURL: "https://gitea.example.com", adminToken: "")
+        let host = GiteaHost(name: "New Host", baseURL: "", adminToken: "")
         modelContext.insert(host)
         selectedHost = host
     }
 
     private func deleteHosts(offsets: IndexSet) {
-        offsets.map { hosts[$0] }.forEach(modelContext.delete)
+        offsets.map { hosts[$0] }.forEach(deleteHost)
+    }
+
+    private func deleteSelectedHost() {
+        guard let hostToDelete else { return }
+        deleteHost(hostToDelete)
+        self.hostToDelete = nil
+        confirmHostDelete = false
+    }
+
+    private func deleteHost(_ host: GiteaHost) {
+        if selectedHost == host {
+            selectedHost = hosts.first { $0 != host }
+        }
+        modelContext.delete(host)
     }
 
 }
@@ -229,6 +261,10 @@ struct HostDashboardView: View {
         .task(id: host.id) {
             guard !hasLoadedRepositories else { return }
             hasLoadedRepositories = true
+            guard isConnectionConfigured else {
+                showConnectionSheet = true
+                return
+            }
             await testConnection()
             await loadRepositories()
         }
@@ -247,6 +283,11 @@ struct HostDashboardView: View {
     private var emailDomain: String {
         let domain = host.emailDomain.trimmingCharacters(in: .whitespacesAndNewlines).trimmingPrefix("@")
         return domain.isEmpty ? "skills.edu" : domain
+    }
+
+    private var isConnectionConfigured: Bool {
+        !host.baseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !host.adminToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var hostDisplayName: String {
