@@ -196,11 +196,6 @@ struct HostDashboardView: View {
                         .foregroundStyle(.secondary)
                 }
 
-
-                actionSection("Test Project") {
-                    Button("Configure") { showTestProjectSheet = true }
-                }
-
                 dangerSection("Danger Zone") {
                     Button("Clean Up", role: .destructive) { confirmCleanup = true }.disabled(isWorking)
                 }
@@ -513,7 +508,8 @@ struct HostDashboardView: View {
             repos = []
             newUser = ""
             newRepo = ""
-            statusMessage = "Deleted \(removableUsers.count) non-admin users."
+            repositories = try await api.repositories()
+            statusMessage = "Deleted \(removableUsers.count) non-admin users and loaded \(repositories.count) repositories."
         }
     }
 
