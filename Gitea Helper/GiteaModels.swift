@@ -14,6 +14,7 @@ final class GiteaHost {
     var baseURL: String
     var adminToken: String
     var emailDomain: String = "skills.edu"
+    var addWorkstationNumberToRepoName: Bool = true
     var isSelected: Bool
     var createdAt: Date
 
@@ -25,6 +26,7 @@ final class GiteaHost {
         self.baseURL = baseURL
         self.adminToken = adminToken
         self.emailDomain = "skills.edu"
+        self.addWorkstationNumberToRepoName = true
         self.isSelected = isSelected
         self.createdAt = Date()
         self.accounts = []

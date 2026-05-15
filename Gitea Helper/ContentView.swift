@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 enum AppError: LocalizedError {
     case message(String)
@@ -104,7 +105,16 @@ struct HostDashboardView: View {
 
 
                 compactSection("Provision", isExpanded: $showProvisioning) {
-                    Button("Configure") { showProvisionSheet = true }
+                    HStack {
+                        Button {
+                            exportProvisionCSV()
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(host.accounts.isEmpty)
+                        Button("Configure") { showProvisionSheet = true }
+                    }
                 } content: {
                     if host.accounts.isEmpty {
                         Text("No generated accounts yet.")
@@ -353,6 +363,48 @@ struct HostDashboardView: View {
         }
     }
 
+    private func exportProvisionCSV() {
+        let accounts = sortedAccounts
+        guard !accounts.isEmpty else { return }
+
+        let savePanel = NSSavePanel()
+        savePanel.allowedContentTypes = [.commaSeparatedText]
+        savePanel.canCreateDirectories = true
+        savePanel.nameFieldStringValue = "\(safeFileName(host.name))-provision.csv"
+
+        guard savePanel.runModal() == .OK, let url = savePanel.url else { return }
+
+        do {
+            try provisionCSV(for: accounts).write(to: url, atomically: true, encoding: .utf8)
+            statusMessage = "Exported \(accounts.count) accounts."
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
+    }
+
+    private func provisionCSV(for accounts: [GeneratedAccount]) -> String {
+        let rows = accounts.map { account in
+            [host.baseURL, account.username, account.email, account.password].map(csvValue).joined(separator: ",")
+        }
+        return (["host,username,email,password"] + rows).joined(separator: "\n") + "\n"
+    }
+
+    private func csvValue(_ value: String) -> String {
+        let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
+        guard escaped.contains(",") || escaped.contains("\"") || escaped.contains("\n") || escaped.contains("\r") else {
+            return escaped
+        }
+        return "\"\(escaped)\""
+    }
+
+    private func safeFileName(_ value: String) -> String {
+        let invalidCharacters = CharacterSet(charactersIn: "/\\:?%*|\"<>")
+        let parts = value.components(separatedBy: invalidCharacters)
+        let fileName = parts.joined(separator: "-").trimmingCharacters(in: .whitespacesAndNewlines)
+        return fileName.isEmpty ? "gitea-helper" : fileName
+    }
+
 
 
     private func openHost() {
@@ -437,6 +489,7 @@ struct HostDashboardView: View {
     }
 
     private func repoName(_ base: String, _ username: String) -> String {
+        guard host.addWorkstationNumberToRepoName else { return base }
         let digits = username.filter(\.isNumber)
         return digits.isEmpty ? base : base + String(digits.suffix(2))
     }
@@ -487,6 +540,7 @@ struct ProvisionSettingsView: View {
             Text("Generated users will use username@\(displayDomain).")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Toggle("Add workstation number to repo names", isOn: $host.addWorkstationNumberToRepoName)
             HStack(alignment: .top, spacing: 12) {
                 EditableNameList(title: "Users", items: $users, newValue: $newUser, placeholder: "s04")
                 EditableNameList(title: "Repos", items: $repos, newValue: $newRepo, placeholder: "module-c")
