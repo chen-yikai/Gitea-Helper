@@ -1,2 +1,0 @@
-Target dependency graph (1 target)
-Target 'Gitea Helper' in project 'Gitea Helper' (no dependencies)

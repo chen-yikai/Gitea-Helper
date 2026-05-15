@@ -1,5 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     '/Users/elias/projects/Gitea Helper/build/DerivedData/Build/Products/Release/Gitea Helper.app/Contents/MacOS/Gitea Helper'
-relocations:     []
-...
