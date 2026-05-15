@@ -52,25 +52,6 @@ struct GiteaAPI {
         try await sendWithoutBody(path, method: "POST", body: body, acceptedStatusCodes: [201, 409, 422])
     }
 
-    func createTestRepository(name: String, description: String, readme: String) async throws -> String {
-        let user = try await currentUser()
-        let body: [String: Any] = [
-            "name": name,
-            "private": false,
-            "auto_init": false,
-            "description": description.isEmpty ? "Test project created via Gitea Helper" : description
-        ]
-        try await sendWithoutBody("/api/v1/user/repos", method: "POST", body: body, acceptedStatusCodes: [201, 409, 422])
-
-        let readmeBody: [String: Any] = [
-            "content": Data((readme.isEmpty ? "# \(name)" : readme).utf8).base64EncodedString(),
-            "message": "Initial commit: Add README.md"
-        ]
-        let readmePath = "/api/v1/repos/\(user.username.urlPathEncoded)/\(name.urlPathEncoded)/contents/README.md"
-        try await sendWithoutBody(readmePath, method: "POST", body: readmeBody, acceptedStatusCodes: [201, 409, 422])
-        return "\(user.username)/\(name)"
-    }
-
     func deleteRepository(owner: String, name: String) async throws {
         let path = "/api/v1/repos/\(owner.urlPathEncoded)/\(name.urlPathEncoded)"
         try await sendWithoutBody(path, method: "DELETE", acceptedStatusCodes: [204])
@@ -137,16 +118,5 @@ struct GiteaAPI {
 
 private struct RepoSearchResponse: Decodable {
     let data: [GiteaRepository]
-}
-
-private extension String {
-    var urlPathEncoded: String {
-        addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? self
-    }
-
-    func trimmingSuffix(_ suffix: String) -> String {
-        guard hasSuffix(suffix) else { return self }
-        return String(dropLast(suffix.count))
-    }
 }
 
